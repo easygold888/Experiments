@@ -1,0 +1,83 @@
+:root {
+  --bg: #090b0e;
+  --panel: #10161f;
+  --panel-border: #2a3747;
+  --text: #e5e7eb;
+  --muted: #93a3b8;
+  --accent: #20c6e8;
+  --gold: #ca9a46;
+  --warn: #ef4444;
+  --ok: #22c55e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Segoe UI, Roboto, sans-serif;
+  background: radial-gradient(circle at 20% 20%, #121723 0, #090b0e 45%, #05070a 100%);
+  color: var(--text);
+}
+.topbar {
+  height: 56px;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid #1f2a38;
+  background: #080b10;
+}
+.brand { font-weight: 700; color: var(--gold); letter-spacing: 0.2px; }
+.controls label { color: var(--muted); font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.controls select { background: #0f1722; color: var(--text); border: 1px solid #2b3949; border-radius: 6px; padding: 4px 6px; }
+.status { color: var(--muted); font-size: 13px; }
+.layout {
+  display: grid;
+  grid-template-columns: 290px 1fr 390px;
+  height: calc(100vh - 56px);
+}
+.left, .right {
+  padding: 10px;
+  overflow: auto;
+  background: #0b111a;
+}
+.left { border-right: 1px solid #1f2a38; }
+.right { border-left: 1px solid #1f2a38; }
+#globe { width: 100%; height: 100%; }
+.panel {
+  background: linear-gradient(180deg, #111826 0%, #0f1520 100%);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+h2, h3 { margin: 0 0 10px; }
+h2 { font-size: 22px; color: #dbeafe; }
+h3 { font-size: 18px; color: #cbd5e1; }
+label { display: block; margin-bottom: 6px; color: var(--muted); }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; }
+li { color: #dbeafe; line-height: 1.25; }
+a { color: var(--accent); text-decoration: none; }
+.small { color: var(--muted); font-size: 12px; }
+.regime {
+  font-size: 18px;
+  font-weight: 700;
+  padding: 6px 8px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.regime.risk-on { color: #052e16; background: rgba(34, 197, 94, 0.9); }
+.regime.neutral { color: #111827; background: rgba(250, 204, 21, 0.9); }
+.regime.risk-off { color: #fff; background: rgba(239, 68, 68, 0.9); }
+#country-summary .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 6px; }
+#country-summary .k { color: var(--muted); }
+#country-summary .v { color: #dbeafe; font-weight: 600; }
+.severity {
+  display: inline-block;
+  font-size: 11px;
+  border: 1px solid #3b4f66;
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: #c4e2ff;
+}
