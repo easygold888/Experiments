@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from httpx import RequestError
 
-app = FastAPI(title="Planetary Market Intelligence", version="0.3.0")
+app = FastAPI(title="Planetary Market Intelligence", version="0.4.0")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 HTTP_TIMEOUT = 15.0
@@ -32,6 +32,59 @@ WATCHLIST = [
     "BRENT",
     "VIX",
 ]
+
+COUNTRY_ALIASES = {
+    "USA": "United States",
+    "US": "United States",
+    "MEX": "Mexico",
+    "MX": "Mexico",
+    "BRA": "Brazil",
+    "BR": "Brazil",
+    "COL": "Colombia",
+    "CO": "Colombia",
+    "ARG": "Argentina",
+    "AR": "Argentina",
+    "CAN": "Canada",
+    "CA": "Canada",
+    "CHN": "China",
+    "CN": "China",
+    "JPN": "Japan",
+    "JP": "Japan",
+    "DEU": "Germany",
+    "DE": "Germany",
+    "FRA": "France",
+    "FR": "France",
+    "GBR": "United Kingdom",
+    "UK": "United Kingdom",
+    "ESP": "Spain",
+    "ES": "Spain",
+    "ITA": "Italy",
+    "IT": "Italy",
+}
+
+COUNTRY_TO_CONTINENT = {
+    "United States": "North America",
+    "Mexico": "North America",
+    "Canada": "North America",
+    "Brazil": "South America",
+    "Argentina": "South America",
+    "Colombia": "South America",
+    "United Kingdom": "Europe",
+    "France": "Europe",
+    "Germany": "Europe",
+    "Spain": "Europe",
+    "Italy": "Europe",
+    "China": "Asia",
+    "Japan": "Asia",
+}
+
+CATEGORY_TERMS = {
+    "politica": ["politics", "election", "government", "congress", "policy", "diplomacy"],
+    "acciones": ["equity", "stocks", "share", "earnings", "nasdaq", "sp500"],
+    "macro": ["inflation", "gdp", "rates", "central bank", "fiscal", "bond"],
+    "energia": ["oil", "gas", "lng", "pipeline", "opec", "refinery"],
+    "geopolitica": ["geopolitics", "sanctions", "conflict", "war", "security", "military"],
+}
 
 
 class TTLCache:
@@ -53,6 +106,12 @@ class TTLCache:
 
 
 cache = TTLCache()
+
+
+def parse_csv_param(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [p.strip() for p in raw.split(",") if p.strip()]
 
 
 def clamp(v: float, min_v: float = 0.0, max_v: float = 100.0) -> float:
@@ -93,6 +152,8 @@ def classify_event_impact(title: str | None) -> list[str]:
         assets.extend(["Gold", "CHF", "JPY", "VIX"])
     if any(k in text for k in ["inflation", "rate", "central bank", "cpi"]):
         assets.extend(["DXY", "EURUSD", "USDJPY"])
+    if any(k in text for k in ["stocks", "equity", "nasdaq", "sp500", "earnings"]):
+        assets.extend(["SPX", "NDX", "VIX"])
     return sorted(set(assets))
 
 
@@ -104,6 +165,52 @@ def infer_bias(assets: list[str], severity: int) -> str:
     if any(a in assets for a in ["DXY", "USDJPY"]):
         return "usd-bullish"
     return "neutral"
+
+
+def infer_category(title: str | None) -> str:
+    text = (title or "").lower()
+    if any(t in text for t in CATEGORY_TERMS["energia"]):
+        return "energia"
+    if any(t in text for t in CATEGORY_TERMS["acciones"]):
+        return "acciones"
+    if any(t in text for t in CATEGORY_TERMS["politica"]):
+        return "politica"
+    if any(t in text for t in CATEGORY_TERMS["macro"]):
+        return "macro"
+    if any(t in text for t in CATEGORY_TERMS["geopolitica"]):
+        return "geopolitica"
+    return "general"
+
+
+def resolve_continent(country_name: str | None) -> str:
+    if not country_name:
+        return "Unknown"
+    return COUNTRY_TO_CONTINENT.get(country_name, "Unknown")
+
+
+def normalized_country(country_name: str | None) -> str:
+    if not country_name:
+        return "Unknown"
+    name = country_name.strip()
+    return COUNTRY_ALIASES.get(name.upper(), name)
+
+
+def build_news_query(countries: list[str], categories: list[str], keyword: str | None) -> str:
+    blocks: list[str] = []
+    if countries:
+        cterms = [COUNTRY_ALIASES.get(c.upper(), c) for c in countries]
+        blocks.append("(" + " OR ".join(cterms) + ")")
+    if categories:
+        cat_terms: list[str] = []
+        for c in categories:
+            cat_terms.extend(CATEGORY_TERMS.get(c.lower(), [c]))
+        if cat_terms:
+            blocks.append("(" + " OR ".join(sorted(set(cat_terms))) + ")")
+    if keyword:
+        blocks.append(f"({keyword})")
+    if not blocks:
+        return "geopolitics OR conflict OR sanctions OR central bank OR stocks OR oil"
+    return " AND ".join(blocks)
 
 
 def compute_sovereign_risk(indicators: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -258,8 +365,17 @@ async def get_country(iso3: str = "MEX") -> dict[str, Any]:
     return output
 
 
-async def get_events(query: str = "geopolitics OR conflict OR sanctions OR central bank", max_records: int = 40) -> dict[str, Any]:
-    cache_key = f"events:{query}:{max_records}"
+async def get_events(
+    query: str = "geopolitics OR conflict OR sanctions OR central bank",
+    max_records: int = 80,
+    countries: list[str] | None = None,
+    categories: list[str] | None = None,
+    continents: list[str] | None = None,
+) -> dict[str, Any]:
+    countries = countries or []
+    categories = categories or []
+    continents = continents or []
+    cache_key = f"events:{query}:{max_records}:{','.join(countries)}:{','.join(categories)}:{','.join(continents)}"
     cached = cache.get(cache_key)
     if cached:
         return {"cache": True, **cached}
@@ -278,27 +394,60 @@ async def get_events(query: str = "geopolitics OR conflict OR sanctions OR centr
             title = article.get("title")
             assets = classify_event_impact(title)
             severity = score_event_severity(title)
-            events.append(
-                {
-                    "title": title,
-                    "summary": (article.get("title") or "")[0:140],
-                    "url": article.get("url"),
-                    "source": article.get("domain"),
-                    "seendate": article.get("seendate"),
-                    "category": "Geopolitics" if severity >= 55 else "Macro",
-                    "severity": severity,
-                    "market_impact": assets,
-                    "bias": infer_bias(assets, severity),
-                    "status": "market-moving" if severity >= 70 else "developing",
-                    "location": {"name": article.get("sourceCountry"), "lat": loc.get("lat"), "lon": loc.get("long")},
-                }
-            )
+            country_name = normalized_country(article.get("sourceCountry"))
+            continent = resolve_continent(country_name)
+            category = infer_category(title)
+            event = {
+                "title": title,
+                "summary": (article.get("title") or "")[0:180],
+                "url": article.get("url"),
+                "source": article.get("domain"),
+                "seendate": article.get("seendate"),
+                "category": category,
+                "severity": severity,
+                "market_impact": assets,
+                "bias": infer_bias(assets, severity),
+                "status": "market-moving" if severity >= 70 else "developing",
+                "location": {"name": country_name, "continent": continent, "lat": loc.get("lat"), "lon": loc.get("long")},
+            }
+            events.append(event)
+
+        if countries:
+            wanted = {COUNTRY_ALIASES.get(c.upper(), c) for c in countries}
+            events = [e for e in events if e.get("location", {}).get("name") in wanted]
+        if continents:
+            wanted_continents = {c.lower() for c in continents}
+            events = [e for e in events if e.get("location", {}).get("continent", "").lower() in wanted_continents]
+        if categories:
+            wanted_categories = {c.lower() for c in categories}
+            events = [e for e in events if e.get("category", "").lower() in wanted_categories]
+
+        by_country: dict[str, int] = {}
+        by_continent: dict[str, int] = {}
+        by_category: dict[str, int] = {}
+        by_asset: dict[str, int] = {}
+
+        for e in events:
+            country_name = e.get("location", {}).get("name", "Unknown")
+            continent = e.get("location", {}).get("continent", "Unknown")
+            category = e.get("category", "general")
+            by_country[country_name] = by_country.get(country_name, 0) + 1
+            by_continent[continent] = by_continent.get(continent, 0) + 1
+            by_category[category] = by_category.get(category, 0) + 1
+            for asset in e.get("market_impact", []):
+                by_asset[asset] = by_asset.get(asset, 0) + 1
 
         result = {
             "provider": "gdelt",
             "query": query,
             "count": len(events),
             "events": events,
+            "aggregations": {
+                "countries": by_country,
+                "continents": by_continent,
+                "categories": by_category,
+                "assets": by_asset,
+            },
             "avg_severity": round(mean([e["severity"] for e in events]), 2) if events else 0,
             "latency_ms": latency_ms,
             "freshness": "near-real-time",
@@ -312,25 +461,25 @@ async def get_events(query: str = "geopolitics OR conflict OR sanctions OR centr
                 "url": "#",
                 "source": "fallback",
                 "seendate": time.strftime("%Y%m%d%H%M%S"),
-                "category": "Geopolitics",
+                "category": "geopolitica",
                 "severity": 78,
                 "market_impact": ["Brent", "WTI", "Gold", "JPY", "CHF"],
                 "bias": "risk-off",
                 "status": "market-moving",
-                "location": {"name": "Middle East", "lat": 26.0, "lon": 56.0},
+                "location": {"name": "Middle East", "continent": "Asia", "lat": 26.0, "lon": 56.0},
             },
             {
-                "title": "Central bank commentary shifts USD rate expectations",
-                "summary": "Forward guidance remarks increase front-end volatility in FX.",
+                "title": "Fed commentary shifts USD rate expectations",
+                "summary": "Forward guidance remarks increase front-end volatility in FX and rates.",
                 "url": "#",
                 "source": "fallback",
                 "seendate": time.strftime("%Y%m%d%H%M%S"),
-                "category": "Central Banks",
+                "category": "macro",
                 "severity": 58,
                 "market_impact": ["DXY", "EURUSD", "USDJPY"],
                 "bias": "usd-bullish",
                 "status": "developing",
-                "location": {"name": "United States", "lat": 38.9, "lon": -77.0},
+                "location": {"name": "United States", "continent": "North America", "lat": 38.9, "lon": -77.0},
             },
         ]
         result = {
@@ -338,6 +487,12 @@ async def get_events(query: str = "geopolitics OR conflict OR sanctions OR centr
             "query": query,
             "count": len(fallback),
             "events": fallback,
+            "aggregations": {
+                "countries": {"Middle East": 1, "United States": 1},
+                "continents": {"Asia": 1, "North America": 1},
+                "categories": {"geopolitica": 1, "macro": 1},
+                "assets": {"Brent": 1, "WTI": 1, "Gold": 1, "JPY": 1, "CHF": 1, "DXY": 1, "EURUSD": 1, "USDJPY": 1},
+            },
             "avg_severity": round(mean([e["severity"] for e in fallback]), 2),
             "latency_ms": latency_ms,
             "freshness": "degraded-fallback",
@@ -345,7 +500,7 @@ async def get_events(query: str = "geopolitics OR conflict OR sanctions OR centr
             "note": "No se pudo consultar GDELT en este entorno.",
         }
 
-    cache.set(cache_key, result, ttl_seconds=180)
+    cache.set(cache_key, result, ttl_seconds=120)
     return result
 
 
@@ -461,7 +616,7 @@ def build_asset_context(selected_asset: str, watchlist: list[dict[str, Any]]) ->
         "volatility": round(abs(item["change_pct"]) * 1.8 + 0.7, 2),
         "returns": returns,
         "seasonality": [round(base * (1 + pseudo_noise(item["symbol"] + str(i)) / 25), 2) for i in range(12)],
-        "note": f"{item['symbol']} mantiene sesgo {('alcista' if item['change_pct']>0 else 'bajista')} en marco táctico.",
+        "note": f"{item['symbol']} mantiene sesgo {('alcista' if item['change_pct'] > 0 else 'bajista')} en marco táctico.",
     }
 
 
@@ -476,21 +631,61 @@ async def country_snapshot(iso3: str) -> dict[str, Any]:
 
 
 @app.get("/api/news/intelligence")
-async def news_intelligence(query: str = Query("geopolitics OR conflict OR sanctions OR central bank"), limit: int = Query(20, ge=5, le=80)) -> dict[str, Any]:
+async def news_intelligence(query: str = Query("geopolitics OR conflict OR sanctions OR central bank"), limit: int = Query(50, ge=20, le=250)) -> dict[str, Any]:
     evs = await get_events(query=query, max_records=limit)
-    return {"headlines": evs.get("events", []), "provider": evs.get("provider"), "degraded": evs.get("degraded", False)}
+    return {"headlines": evs.get("events", []), "provider": evs.get("provider"), "degraded": evs.get("degraded", False), "count": evs.get("count", 0)}
 
 
 @app.get("/api/events")
-async def events(query: str = Query("geopolitics OR conflict OR sanctions OR central bank"), max_records: int = Query(40, ge=5, le=80)) -> dict[str, Any]:
-    return await get_events(query=query, max_records=max_records)
+async def events(
+    query: str = Query("geopolitics OR conflict OR sanctions OR central bank"),
+    max_records: int = Query(80, ge=20, le=250),
+    countries: str = Query(""),
+    categories: str = Query(""),
+    continents: str = Query(""),
+) -> dict[str, Any]:
+    return await get_events(
+        query=query,
+        max_records=max_records,
+        countries=parse_csv_param(countries),
+        categories=[c.lower() for c in parse_csv_param(categories)],
+        continents=parse_csv_param(continents),
+    )
+
+
+@app.get("/api/intelligence/hub")
+async def intelligence_hub(
+    countries: str = Query("USA,BRA,MEX,COL"),
+    continents: str = Query("North America,South America"),
+    categories: str = Query("politica,acciones,macro,geopolitica,energia"),
+    keyword: str = Query(""),
+    limit: int = Query(120, ge=20, le=250),
+) -> dict[str, Any]:
+    country_list = parse_csv_param(countries)
+    category_list = [c.lower() for c in parse_csv_param(categories)]
+    continent_list = parse_csv_param(continents)
+    query = build_news_query(country_list, category_list, keyword if keyword else None)
+    feed = await get_events(query=query, max_records=limit, countries=country_list, categories=category_list, continents=continent_list)
+
+    return {
+        "generated_at": int(time.time()),
+        "request": {
+            "countries": country_list,
+            "continents": continent_list,
+            "categories": category_list,
+            "keyword": keyword,
+            "limit": limit,
+            "query": query,
+        },
+        "feed": feed,
+    }
 
 
 @app.get("/api/dashboard")
 async def dashboard(base: str = Query("USD"), country: str = Query("MEX"), asset: str = Query("XAUUSD")) -> JSONResponse:
     fx = await get_fx(base=base, symbols=DEFAULT_FX_SYMBOLS)
     ctry = await get_country(iso3=country)
-    evs = await get_events()
+    evs = await get_events(max_records=120)
 
     regime = build_regime(fx, ctry, evs)
     watchlist = build_watchlist(fx)
@@ -549,7 +744,6 @@ async def dashboard(base: str = Query("USD"), country: str = Query("MEX"), asset
 
 @app.get("/api/overview")
 async def overview(base: str = Query("USD"), country: str = Query("MEX"), asset: str = Query("XAUUSD")) -> JSONResponse:
-    # Compat endpoint for previous frontend versions.
     return await dashboard(base=base, country=country, asset=asset)
 
 
