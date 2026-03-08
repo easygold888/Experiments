@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PMI — Eye of Market</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">PMI // GOD EYE · Trading Macro FX</div>
+      <div class="controls">
+        <label>País
+          <select id="country-select">
+            <option value="MEX">MEX</option>
+            <option value="BRA">BRA</option>
+            <option value="ARG">ARG</option>
+            <option value="USA">USA</option>
+          </select>
+        </label>
+      </div>
+      <div class="status" id="status">Inicializando…</div>
+    </header>
+
+    <main class="layout">
+      <aside class="left">
+        <section class="panel">
+          <h3>Capas</h3>
+          <label><input type="checkbox" id="toggle-events" checked /> Eventos geopolíticos</label>
+          <label><input type="checkbox" id="toggle-routes" checked /> Rutas energéticas</label>
+          <label><input type="checkbox" id="toggle-chokepoints" checked /> Chokepoints</label>
+        </section>
+
+        <section class="panel">
+          <h3>Watchlist FX</h3>
+          <ul id="fx-list"></ul>
+        </section>
+
+        <section class="panel">
+          <h3>Risk-On / Risk-Off</h3>
+          <div class="regime" id="regime">—</div>
+          <div class="small" id="regime-meta">—</div>
+        </section>
+
+        <section class="panel">
+          <h3>What to watch next</h3>
+          <ul id="watchpoints"></ul>
+        </section>
+      </aside>
+
+      <section id="globe"></section>
+
+      <aside class="right">
+        <section class="panel">
+          <h2>What Moved Markets?</h2>
+          <ul id="what-moved"></ul>
+        </section>
+
+        <section class="panel" id="country-panel">
+          <h2>Country Intelligence</h2>
+          <div id="country-summary"></div>
+        </section>
+
+        <section class="panel" id="transmission-panel">
+          <h2>Conflict-to-Market Transmission</h2>
+          <ul id="transmission-list"></ul>
+        </section>
+
+        <section class="panel" id="events-panel">
+          <h2>Global Event Stream</h2>
+          <ul id="events"></ul>
+        </section>
+      </aside>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
