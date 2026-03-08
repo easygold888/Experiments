@@ -1,6 +1,6 @@
 # Experiments — Planetary Market Intelligence
 
-Terminal web-first de inteligencia de mercados (Trading · Macro · FX) con núcleo geoespacial, feed editorial y paneles operativos.
+Terminal web-first de inteligencia de mercados (Trading · Macro · FX) con mapa operativo 2D manual, feed editorial masivo y paneles operativos.
 
 ## Quickstart (Linux/macOS)
 ```bash
@@ -24,6 +24,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `GET /api/country/{iso3}`
 - `GET /api/news/intelligence`
 - `GET /api/events`
+- `GET /api/intelligence/hub` (central de noticias con filtros por países/continentes/categorías)
 - `GET /api/dashboard` (payload maestro para la UI)
 - `GET /api/overview` (compatibilidad)
 
@@ -31,7 +32,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - Top bar institucional con estado de feeds, latencias y reloj local/UTC.
 - Watchlist financiera interactiva con selección contextual.
 - Asset Context Card (retornos, momentum, volatilidad, nota táctica).
-- Globo con capas activables: eventos, rutas energéticas y chokepoints.
+- Mapa operativo 2D manual con marcadores de eventos y radar en vivo (sin dependencia de render 3D).
 - Market Intelligence Feed editorial (categoría, severidad, bias, activos impactados).
 - Country Intelligence Card con score de riesgo soberano.
 - Global Indices por región (Américas, Europa, Asia).
