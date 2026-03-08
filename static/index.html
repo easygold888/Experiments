@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Planetary Market Intelligence</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">PMI // Trading · Macro · FX</div>
+      <div class="status" id="status">Cargando…</div>
+    </header>
+
+    <main class="layout">
+      <aside class="left">
+        <h2>Capas / Filtros</h2>
+        <label><input type="checkbox" id="toggle-events" checked /> Eventos geopolíticos</label>
+        <label><input type="checkbox" id="toggle-fx" checked /> Panel FX</label>
+        <label><input type="checkbox" id="toggle-country" checked /> Country card</label>
+        <hr />
+        <h3>Watchlist FX</h3>
+        <ul id="fx-list"></ul>
+      </aside>
+
+      <section id="globe"></section>
+
+      <aside class="right">
+        <section class="panel" id="fx-panel">
+          <h2>FX Command Center</h2>
+          <pre id="fx-json">—</pre>
+        </section>
+        <section class="panel" id="country-panel">
+          <h2>Country Intelligence Card (MEX)</h2>
+          <pre id="country-json">—</pre>
+        </section>
+        <section class="panel" id="event-panel">
+          <h2>Global Event Stream</h2>
+          <ul id="events"></ul>
+        </section>
+      </aside>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
