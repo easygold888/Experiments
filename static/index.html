@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PMI // Trading · Macro · FX</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">PMI // Trading · Macro · FX</div>
+      <div class="top-controls">
+        <label>País
+          <select id="country-select">
+            <option value="MEX">MEX</option>
+            <option value="BRA">BRA</option>
+            <option value="ARG">ARG</option>
+            <option value="USA">USA</option>
+          </select>
+        </label>
+      </div>
+      <div class="clocks">
+        <span id="clock-local">Local --:--:--</span>
+        <span id="clock-utc">UTC --:--:--</span>
+      </div>
+      <div class="status" id="status">Booting…</div>
+    </header>
+
+    <main class="layout">
+      <aside class="left">
+        <section class="panel">
+          <h3>Operational Layer Controls</h3>
+          <label><input type="checkbox" id="toggle-events" checked /> Eventos geopolíticos</label>
+          <label><input type="checkbox" id="toggle-routes" checked /> Rutas energéticas</label>
+          <label><input type="checkbox" id="toggle-chokepoints" checked /> Chokepoints</label>
+        </section>
+
+        <section class="panel">
+          <h3>Watchlist</h3>
+          <div id="watchlist"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Asset Context</h3>
+          <div id="asset-context">Selecciona un activo…</div>
+        </section>
+      </aside>
+
+      <section id="globe"></section>
+
+      <aside class="right">
+        <section class="panel">
+          <h3>Market Intelligence Feed</h3>
+          <div id="news-feed"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Country Intelligence</h3>
+          <div id="country-card"></div>
+        </section>
+
+        <section class="panel">
+          <h3>Global Indices</h3>
+          <div id="indices"></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="ribbon" id="ribbon"></footer>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
