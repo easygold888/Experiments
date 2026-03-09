@@ -528,6 +528,34 @@ async def get_events(
         }
     except (RequestError, httpx.HTTPStatusError):
         fallback: list[dict[str, Any]] = []
+        fallback = [
+            {
+                "title": "Shipping disruption risk near Strait chokepoint",
+                "summary": "Insurance premiums up; tanker route delays under monitoring.",
+                "url": "#",
+                "source": "fallback",
+                "seendate": time.strftime("%Y%m%d%H%M%S"),
+                "category": "geopolitica",
+                "severity": 78,
+                "market_impact": ["Brent", "WTI", "Gold", "JPY", "CHF"],
+                "bias": "risk-off",
+                "status": "market-moving",
+                "location": {"name": "Middle East", "continent": "Asia", "lat": 26.0, "lon": 56.0},
+            },
+            {
+                "title": "Fed commentary shifts USD rate expectations",
+                "summary": "Forward guidance remarks increase front-end volatility in FX and rates.",
+                "url": "#",
+                "source": "fallback",
+                "seendate": time.strftime("%Y%m%d%H%M%S"),
+                "category": "macro",
+                "severity": 58,
+                "market_impact": ["DXY", "EURUSD", "USDJPY"],
+                "bias": "usd-bullish",
+                "status": "developing",
+                "location": {"name": "United States", "continent": "North America", "lat": 38.9, "lon": -77.0},
+            },
+        ]
         result = {
             "provider": "unavailable",
             "query": query,
@@ -535,6 +563,13 @@ async def get_events(
             "events": fallback,
             "aggregations": {"countries": {}, "continents": {}, "categories": {}, "assets": {}},
             "avg_severity": 0,
+            "aggregations": {
+                "countries": {"Middle East": 1, "United States": 1},
+                "continents": {"Asia": 1, "North America": 1},
+                "categories": {"geopolitica": 1, "macro": 1},
+                "assets": {"Brent": 1, "WTI": 1, "Gold": 1, "JPY": 1, "CHF": 1, "DXY": 1, "EURUSD": 1, "USDJPY": 1},
+            },
+            "avg_severity": round(mean([e["severity"] for e in fallback]), 2),
             "latency_ms": latency_ms,
             "freshness": "degraded-fallback",
             "degraded": True,
@@ -647,6 +682,8 @@ def build_asset_context(selected_asset: str, watchlist: list[dict[str, Any]]) ->
         "returns": returns,
         "seasonality": [],
         "note": f"{item['symbol']} en seguimiento con datos de mercado público.",
+        "seasonality": [round(base * (1 + pseudo_noise(item["symbol"] + str(i)) / 25), 2) for i in range(12)],
+        "note": f"{item['symbol']} mantiene sesgo {('alcista' if item['change_pct'] > 0 else 'bajista')} en marco táctico.",
     }
 
 
@@ -687,6 +724,8 @@ async def events(
 async def intelligence_hub(
     countries: str = Query("COL"),
     continents: str = Query("South America"),
+    countries: str = Query("USA,BRA,MEX,COL"),
+    continents: str = Query("North America,South America"),
     categories: str = Query("politica,acciones,macro,geopolitica,energia"),
     keyword: str = Query(""),
     limit: int = Query(120, ge=20, le=250),
@@ -774,6 +813,7 @@ async def dashboard(base: str = Query("USD"), country: str = Query("COL"), asset
 
 @app.get("/api/overview")
 async def overview(base: str = Query("USD"), country: str = Query("COL"), asset: str = Query("XAUUSD")) -> JSONResponse:
+async def overview(base: str = Query("USD"), country: str = Query("MEX"), asset: str = Query("XAUUSD")) -> JSONResponse:
     return await dashboard(base=base, country=country, asset=asset)
 
 
