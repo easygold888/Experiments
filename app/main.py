@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from statistics import mean
 from typing import Any
 
@@ -124,9 +124,54 @@ def pct_change(a: float, b: float) -> float:
     return round(((a - b) / b) * 100, 4)
 
 
-def pseudo_noise(seed: str) -> float:
-    n = sum(ord(c) for c in seed)
-    return ((n % 100) - 50) / 100.0
+YAHOO_SYMBOLS = {
+    "EURUSD": "EURUSD=X",
+    "USDJPY": "JPY=X",
+    "GBPUSD": "GBPUSD=X",
+    "USDCAD": "CAD=X",
+    "BTCUSDT": "BTC-USD",
+    "SILVER": "SI=F",
+    "DXY": "DX-Y.NYB",
+    "NDX": "^NDX",
+    "SPX": "^GSPC",
+    "XAUUSD": "GC=F",
+    "NIKKEI": "^N225",
+    "BRENT": "BZ=F",
+    "VIX": "^VIX",
+}
+
+
+async def fetch_yahoo_quotes(symbols: list[str]) -> dict[str, dict[str, float]]:
+    yahoo_symbols = [YAHOO_SYMBOLS[s] for s in symbols if s in YAHOO_SYMBOLS]
+    if not yahoo_symbols:
+        return {}
+
+    try:
+        raw, _ = await fetch_json(
+            "https://query1.finance.yahoo.com/v7/finance/quote",
+            {"symbols": ",".join(yahoo_symbols)},
+            timeout=20.0,
+        )
+    except (RequestError, httpx.HTTPStatusError):
+        return {}
+    rows = raw.get("quoteResponse", {}).get("result", [])
+    by_symbol: dict[str, dict[str, float]] = {}
+    reverse = {v: k for k, v in YAHOO_SYMBOLS.items()}
+
+    for row in rows:
+        symbol = reverse.get(row.get("symbol"))
+        if not symbol:
+            continue
+        price = row.get("regularMarketPrice")
+        change_pct = row.get("regularMarketChangePercent")
+        if price is None or change_pct is None:
+            continue
+        by_symbol[symbol] = {
+            "price": float(price),
+            "change_pct": float(change_pct),
+        }
+
+    return by_symbol
 
 
 def score_event_severity(title: str | None) -> int:
@@ -279,35 +324,69 @@ async def get_fx(base: str = "USD", symbols: str = DEFAULT_FX_SYMBOLS) -> dict[s
 
     latency_ms = None
     try:
-        latest, latency_ms = await fetch_json("https://api.frankfurter.app/latest", {"from": base, "to": symbols})
-        prev_date = (datetime.now(tz=UTC) - timedelta(days=2)).strftime("%Y-%m-%d")
-        prev, _ = await fetch_json(f"https://api.frankfurter.app/{prev_date}", {"from": base, "to": symbols})
+        fx_map = {
+            "EUR": "EURUSD",
+            "JPY": "USDJPY",
+            "GBP": "GBPUSD",
+            "MXN": "USDMXN",
+            "BRL": "USDBRL",
+            "CHF": "USDCHF",
+            "CAD": "USDCAD",
+            "NOK": "USDNOK",
+        }
+        extended = {**YAHOO_SYMBOLS, "USDMXN": "MXN=X", "USDBRL": "BRL=X", "USDCHF": "CHF=X", "USDNOK": "NOK=X"}
+        yahoo_list = [extended[fx_map[s]] for s in parse_csv_param(symbols) if s in fx_map]
+        started = time.perf_counter()
+        raw, _ = await fetch_json("https://query1.finance.yahoo.com/v7/finance/quote", {"symbols": ",".join(yahoo_list)}, timeout=20.0)
+        latency_ms = round((time.perf_counter() - started) * 1000, 2)
+        rows = raw.get("quoteResponse", {}).get("result", [])
+        rev = {v: k for k, v in extended.items()}
+        rates: dict[str, float] = {}
+        changes_1d: dict[str, float] = {}
+        for row in rows:
+            code = rev.get(row.get("symbol"), "")
+            src_price = row.get("regularMarketPrice")
+            src_chg = row.get("regularMarketChangePercent")
+            if src_price is None or src_chg is None:
+                continue
+            if code == "EURUSD":
+                rates["EUR"] = float(src_price)
+                changes_1d["EUR"] = float(src_chg)
+            elif code == "USDJPY":
+                rates["JPY"] = float(src_price)
+                changes_1d["JPY"] = float(src_chg)
+            elif code == "GBPUSD":
+                rates["GBP"] = float(src_price)
+                changes_1d["GBP"] = float(src_chg)
+            elif code in ["USDMXN", "USDBRL", "USDCHF", "USDCAD", "USDNOK"]:
+                key = code.replace("USD", "")
+                rates[key] = float(src_price)
+                changes_1d[key] = float(src_chg)
 
-        rates = latest.get("rates", {})
-        prev_rates = prev.get("rates", {})
-        changes_1d = {k: pct_change(v, prev_rates.get(k, v)) for k, v in rates.items()}
+        if not rates:
+            raise RequestError("No data from Yahoo FX")
 
         result = {
-            "provider": "frankfurter",
-            "base": latest.get("base", base),
-            "date": latest.get("date"),
+            "provider": "yahoo_finance",
+            "base": base,
+            "date": datetime.now(tz=UTC).strftime("%Y-%m-%d"),
             "rates": rates,
             "changes_1d_pct": changes_1d,
             "latency_ms": latency_ms,
-            "freshness": "live-ish",
+            "freshness": "realtime",
             "degraded": False,
         }
     except (RequestError, httpx.HTTPStatusError):
         result = {
-            "provider": "fallback",
+            "provider": "unavailable",
             "base": base,
             "date": time.strftime("%Y-%m-%d"),
-            "rates": {"EUR": 0.92, "JPY": 149.8, "GBP": 0.78, "MXN": 16.9, "BRL": 5.2, "CHF": 0.88, "CAD": 1.35, "NOK": 10.6},
-            "changes_1d_pct": {"EUR": -0.15, "JPY": 0.32, "GBP": -0.08, "MXN": 0.55, "BRL": 0.41, "CHF": -0.03, "CAD": 0.18, "NOK": 0.26},
+            "rates": {},
+            "changes_1d_pct": {},
             "latency_ms": latency_ms,
             "freshness": "degraded-fallback",
             "degraded": True,
-            "note": "No se pudo consultar Frankfurter en este entorno.",
+            "note": "No se pudo consultar Yahoo Finance en este entorno.",
         }
 
     cache.set(cache_key, result, ttl_seconds=120)
@@ -347,17 +426,11 @@ async def get_country(iso3: str = "MEX") -> dict[str, Any]:
     except (RequestError, httpx.HTTPStatusError):
         output = {
             "iso3": iso3,
-            "provider": "fallback",
+            "provider": "unavailable",
             "degraded": True,
             "note": "No se pudo consultar World Bank en este entorno.",
             "latency_ms": round((time.perf_counter() - started) * 1000, 2),
-            "indicators": {
-                "gdp_growth": {"value": 3.2, "date": "2023"},
-                "inflation": {"value": 5.5, "date": "2023"},
-                "debt_gdp": {"value": 46.1, "date": "2023"},
-                "reserves": {"value": 220_000_000_000, "date": "2023"},
-                "trade_balance": {"value": -9_400_000_000, "date": "2023"},
-            },
+            "indicators": {},
         }
 
     output["sovereign_risk"] = compute_sovereign_risk(output.get("indicators", {}))
@@ -454,6 +527,7 @@ async def get_events(
             "degraded": False,
         }
     except (RequestError, httpx.HTTPStatusError):
+        fallback: list[dict[str, Any]] = []
         fallback = [
             {
                 "title": "Shipping disruption risk near Strait chokepoint",
@@ -483,10 +557,12 @@ async def get_events(
             },
         ]
         result = {
-            "provider": "fallback",
+            "provider": "unavailable",
             "query": query,
             "count": len(fallback),
             "events": fallback,
+            "aggregations": {"countries": {}, "continents": {}, "categories": {}, "assets": {}},
+            "avg_severity": 0,
             "aggregations": {
                 "countries": {"Middle East": 1, "United States": 1},
                 "continents": {"Asia": 1, "North America": 1},
@@ -497,7 +573,7 @@ async def get_events(
             "latency_ms": latency_ms,
             "freshness": "degraded-fallback",
             "degraded": True,
-            "note": "No se pudo consultar GDELT en este entorno.",
+            "note": "No se pudo consultar GDELT en este entorno. No se genera contenido inventado.",
         }
 
     cache.set(cache_key, result, ttl_seconds=120)
@@ -523,46 +599,35 @@ def build_regime(fx: dict[str, Any], country: dict[str, Any], events: dict[str, 
     }
 
 
-def build_watchlist(fx: dict[str, Any]) -> list[dict[str, Any]]:
+async def build_watchlist(fx: dict[str, Any]) -> list[dict[str, Any]]:
     rates = fx.get("rates", {})
     changes = fx.get("changes_1d_pct", {})
+    live = await fetch_yahoo_quotes(WATCHLIST)
 
     market = {
-        "EURUSD": rates.get("EUR", 0.92),
-        "USDJPY": rates.get("JPY", 149.8),
-        "GBPUSD": rates.get("GBP", 0.78),
-        "USDCAD": rates.get("CAD", 1.35),
-        "BTCUSDT": 67000 * (1 + pseudo_noise("btc") / 20),
-        "SILVER": 24.5 * (1 + pseudo_noise("silver") / 25),
-        "DXY": 103.4 * (1 + pseudo_noise("dxy") / 40),
-        "NDX": 17950 * (1 + pseudo_noise("ndx") / 35),
-        "SPX": 5120 * (1 + pseudo_noise("spx") / 45),
-        "XAUUSD": 2160 * (1 + pseudo_noise("xau") / 35),
-        "NIKKEI": 39500 * (1 + pseudo_noise("nikkei") / 30),
-        "BRENT": 82.4 * (1 + pseudo_noise("brent") / 20),
-        "VIX": 15.2 * (1 + pseudo_noise("vix") / 15),
+        "EURUSD": rates.get("EUR"),
+        "USDJPY": rates.get("JPY"),
+        "GBPUSD": rates.get("GBP"),
+        "USDCAD": rates.get("CAD"),
     }
 
     mapped_changes = {
-        "EURUSD": changes.get("EUR", -0.12),
-        "USDJPY": changes.get("JPY", 0.22),
-        "GBPUSD": changes.get("GBP", -0.08),
-        "USDCAD": changes.get("CAD", 0.1),
-        "BTCUSDT": 1.2,
-        "SILVER": -0.4,
-        "DXY": 0.3,
-        "NDX": -0.7,
-        "SPX": -0.25,
-        "XAUUSD": 0.35,
-        "NIKKEI": -0.65,
-        "BRENT": 0.95,
-        "VIX": 1.8,
+        "EURUSD": changes.get("EUR"),
+        "USDJPY": changes.get("JPY"),
+        "GBPUSD": changes.get("GBP"),
+        "USDCAD": changes.get("CAD"),
     }
+
+    # Synchronous fallback avoided: values missing become N/A in UI via 0.0
+    for symbol in WATCHLIST:
+        if symbol not in market:
+            market[symbol] = live.get(symbol, {}).get("price")
+            mapped_changes[symbol] = live.get(symbol, {}).get("change_pct")
 
     out: list[dict[str, Any]] = []
     for symbol in WATCHLIST:
-        px = float(market.get(symbol, 0))
-        chg = float(mapped_changes.get(symbol, 0))
+        px = float(market.get(symbol) or 0)
+        chg = float(mapped_changes.get(symbol) or 0)
         out.append(
             {
                 "symbol": symbol,
@@ -615,6 +680,8 @@ def build_asset_context(selected_asset: str, watchlist: list[dict[str, Any]]) ->
         "momentum": "bullish" if item["change_pct"] > 0.4 else "bearish" if item["change_pct"] < -0.4 else "neutral",
         "volatility": round(abs(item["change_pct"]) * 1.8 + 0.7, 2),
         "returns": returns,
+        "seasonality": [],
+        "note": f"{item['symbol']} en seguimiento con datos de mercado público.",
         "seasonality": [round(base * (1 + pseudo_noise(item["symbol"] + str(i)) / 25), 2) for i in range(12)],
         "note": f"{item['symbol']} mantiene sesgo {('alcista' if item['change_pct'] > 0 else 'bajista')} en marco táctico.",
     }
@@ -655,6 +722,8 @@ async def events(
 
 @app.get("/api/intelligence/hub")
 async def intelligence_hub(
+    countries: str = Query("COL"),
+    continents: str = Query("South America"),
     countries: str = Query("USA,BRA,MEX,COL"),
     continents: str = Query("North America,South America"),
     categories: str = Query("politica,acciones,macro,geopolitica,energia"),
@@ -682,13 +751,13 @@ async def intelligence_hub(
 
 
 @app.get("/api/dashboard")
-async def dashboard(base: str = Query("USD"), country: str = Query("MEX"), asset: str = Query("XAUUSD")) -> JSONResponse:
+async def dashboard(base: str = Query("USD"), country: str = Query("COL"), asset: str = Query("XAUUSD")) -> JSONResponse:
     fx = await get_fx(base=base, symbols=DEFAULT_FX_SYMBOLS)
     ctry = await get_country(iso3=country)
     evs = await get_events(max_records=120)
 
     regime = build_regime(fx, ctry, evs)
-    watchlist = build_watchlist(fx)
+    watchlist = await build_watchlist(fx)
     indices = build_indices()
     asset_context = build_asset_context(asset.upper(), watchlist)
 
@@ -743,6 +812,7 @@ async def dashboard(base: str = Query("USD"), country: str = Query("MEX"), asset
 
 
 @app.get("/api/overview")
+async def overview(base: str = Query("USD"), country: str = Query("COL"), asset: str = Query("XAUUSD")) -> JSONResponse:
 async def overview(base: str = Query("USD"), country: str = Query("MEX"), asset: str = Query("XAUUSD")) -> JSONResponse:
     return await dashboard(base=base, country=country, asset=asset)
 

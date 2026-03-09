@@ -28,7 +28,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - `GET /api/dashboard` (payload maestro para la UI)
 - `GET /api/overview` (compatibilidad)
 
-## Qué incluye (MVP operacional v0.3)
+## Qué incluye (MVP operacional v0.4)
 - Top bar institucional con estado de feeds, latencias y reloj local/UTC.
 - Watchlist financiera interactiva con selección contextual.
 - Asset Context Card (retornos, momentum, volatilidad, nota táctica).
@@ -37,6 +37,8 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - Country Intelligence Card con score de riesgo soberano.
 - Global Indices por región (Américas, Europa, Asia).
 - Ribbon inferior con instrumentos clave.
+- Precios de watchlist y FX obtenidos de Yahoo Finance (fuente pública), sin datos sintéticos inventados.
+- Filtro por defecto orientado a Colombia (`COL`).
 
 ## Documento de visión completa
 - `docs/PLATFORM_BLUEPRINT.md`
