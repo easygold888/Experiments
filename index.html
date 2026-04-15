@@ -32,40 +32,6 @@
       overflow-x: hidden;
       min-height: 100vh;
       cursor: none;
-      --mx: 50vw;
-      --my: 35vh;
-    }
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: -1;
-      background:
-        radial-gradient(600px 350px at var(--mx) var(--my), rgba(255,215,0,.12), transparent 60%),
-        radial-gradient(700px 420px at calc(var(--mx) - 12vw) calc(var(--my) + 18vh), rgba(0,255,209,.08), transparent 62%);
-    }
-    body::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      opacity: .07;
-      mix-blend-mode: soft-light;
-      background-image:
-        repeating-linear-gradient(transparent 0 2px, rgba(255,255,255,.35) 2px 3px),
-        radial-gradient(circle at 20% 20%, rgba(255,255,255,.45) 0 1px, transparent 1.5px);
-      background-size: auto, 3px 3px;
-      animation: grain 7s steps(8) infinite;
-    }
-
-    @keyframes grain {
-      0% { transform: translate(0,0); }
-      25% { transform: translate(-2%, 1%); }
-      50% { transform: translate(1%, -1.5%); }
-      75% { transform: translate(1.5%, 2%); }
-      100% { transform: translate(0,0); }
     }
 
     .cursor, .cursor-follower {
@@ -170,13 +136,6 @@
     @keyframes pulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.35);} }
 
     section { width: min(1200px, calc(100% - 28px)); margin: 40px auto; position: relative; }
-    .lux-divider {
-      width: min(1200px, calc(100% - 28px));
-      margin: 24px auto;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255,215,0,.75), rgba(0,255,209,.4), transparent);
-      box-shadow: 0 0 12px rgba(255,215,0,.2);
-    }
 
     .hero {
       min-height: 95vh;
@@ -217,7 +176,6 @@
       margin: 0 auto 26px;
       color: #e7e7df;
     }
-    #heroRotate { transition: opacity .25s ease; color: var(--teal); }
 
     .cta {
       appearance: none;
@@ -251,28 +209,6 @@
       font-size: .84rem;
       color: #dadacf;
     }
-    .hero-terminal {
-      margin: 22px auto 0;
-      max-width: 760px;
-      text-align: left;
-      padding: 12px 14px;
-      font-family: "DM Mono", monospace;
-      font-size: .8rem;
-      color: #d9fff8;
-      line-height: 1.45;
-    }
-    .hero-terminal-head {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 8px;
-      color: #b6f8ec;
-      font-size: .72rem;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-    .hero-terminal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 8px rgba(0,255,209,.8); }
-    .hero-feed-line { opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .marquee-wrap {
       padding: 14px 0;
@@ -322,8 +258,6 @@
       padding: 24px;
       min-height: 230px;
       transition: transform .28s ease, box-shadow .28s ease;
-      transform-style: preserve-3d;
-      will-change: transform;
     }
     .feature-card:hover {
       transform: translateY(-6px);
@@ -397,27 +331,6 @@
       transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1);
     }
     .reveal.visible { opacity: 1; transform: translateY(0); }
-    .section-transition {
-      position: sticky;
-      top: 56px;
-      z-index: 2;
-      pointer-events: none;
-      width: min(1200px, calc(100% - 28px));
-      margin: 0 auto;
-      height: 18px;
-      overflow: hidden;
-    }
-    .section-transition::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,215,0,.35), rgba(0,255,209,.18), transparent);
-      animation: scanner 3.4s linear infinite;
-    }
-    @keyframes scanner {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
 
     .toast-container {
       position: fixed;
@@ -460,7 +373,6 @@
       .hero { min-height: 88vh; }
       .cta { width: 100%; max-width: 360px; }
       section { margin: 28px auto; }
-      .hero-terminal { font-size: .73rem; }
     }
   </style>
 </head>
@@ -481,7 +393,6 @@
   </header>
 
   <main>
-    <div class="section-transition" aria-hidden="true"></div>
     <section class="hero reveal" id="hero">
       <div class="hero-layer" data-speed="0.08">
         <div class="hero-ring one"></div>
@@ -490,16 +401,10 @@
       </div>
       <div class="hero-inner" data-speed="0.22">
         <div class="eyebrow">EasyGoldGlitch / XAUUSD intelligence</div>
-        <h1 class="display scramble" data-text="STOP GUESSING, START PRINTING">STOP GUESSING, START PRINTING</h1>
-        <p>Institutional-grade Gold signals. <span id="heroRotate">Now accessible.</span></p>
+        <h1 class="display scramble" data-text="THE EDGE IS REAL.">THE EDGE IS REAL.</h1>
+        <p>Institutional-grade Gold signals. Now accessible.</p>
         <a href="https://discord.gg/g7NkpsHT" class="cta magnetic" target="_blank" rel="noopener noreferrer">JOIN VIP CHANNEL FREE →</a>
         <div class="proof-pill glass">🔐 Invite-only · 2,400+ traders · $0 forever</div>
-        <div class="hero-terminal glass" id="heroTerminal">
-          <div class="hero-terminal-head"><span class="hero-terminal-dot"></span> vip signal relay · encrypted feed</div>
-          <div class="hero-feed-line">[00:14:02] XAUUSD impulse detected · liquidity sweep above Asia high</div>
-          <div class="hero-feed-line">[00:14:17] EGG model confidence: 0.81 · regime: momentum continuation</div>
-          <div class="hero-feed-line">[00:14:41] VIP alert delivered · median reaction time 43s</div>
-        </div>
       </div>
     </section>
 
@@ -541,17 +446,17 @@
     <section class="reveal">
       <h2 class="section-title scramble" data-text="WHAT YOU GET IN VIP">WHAT YOU GET IN VIP</h2>
       <div class="features-grid">
-        <article class="feature-card glass tilt">
+        <article class="feature-card glass">
           <div class="feature-icon">🔔</div>
           <div class="feature-title">Real-Time News Alerts</div>
           <div class="feature-desc">Market-moving gold news before it hits your feed. Cut noise. Keep only actionable catalysts.</div>
         </article>
-        <article class="feature-card glass tilt">
+        <article class="feature-card glass">
           <div class="feature-icon">📡</div>
           <div class="feature-title">Algorithmic Signal Feed</div>
           <div class="feature-desc">EGG system outputs in real-time with structured entries, invalidation zones, and timing context.</div>
         </article>
-        <article class="feature-card glass tilt">
+        <article class="feature-card glass">
           <div class="feature-icon">🧠</div>
           <div class="feature-title">Elite Analysis</div>
           <div class="feature-desc">Weekly deep dives. No fluff. Just edge for traders who prefer signal over opinion.</div>
@@ -563,19 +468,19 @@
       <div class="how-pin glass">
         <h2 class="section-title scramble" data-text="HOW IT WORKS" style="margin:4px 0 14px;">HOW IT WORKS</h2>
         <div class="how-track" id="howTrack">
-          <article class="step-card glass tilt" data-speed="0.05">
+          <article class="step-card glass" data-speed="0.05">
             <div class="step-no">01</div>
             <div class="step-text">Click the VIP channel link below and enter the server.</div>
           </article>
-          <article class="step-card glass tilt" data-speed="0.08">
+          <article class="step-card glass" data-speed="0.08">
             <div class="step-no">02</div>
             <div class="step-text">Join the Discord server and read onboarding instantly.</div>
           </article>
-          <article class="step-card glass tilt" data-speed="0.1">
+          <article class="step-card glass" data-speed="0.1">
             <div class="step-no">03</div>
             <div class="step-text">Verify your access and unlock the VIP News Channel.</div>
           </article>
-          <article class="step-card glass tilt" data-speed="0.14">
+          <article class="step-card glass" data-speed="0.14">
             <div class="step-no">04</div>
             <div class="step-text">Receive your first signal within 24h and act with confidence.</div>
           </article>
@@ -616,8 +521,6 @@
       const cursorFollower = document.getElementById('cursorFollower');
       const how = document.getElementById('how');
       const howTrack = document.getElementById('howTrack');
-      const heroRotate = document.getElementById('heroRotate');
-      const heroTerminal = document.getElementById('heroTerminal');
 
       const tickerState = { price: 2387.40, change: 0.34 };
       const tickerPrefix = ['XAUUSD ▲', 'XAUUSD ▲', 'XAUUSD ▼'];
@@ -643,42 +546,6 @@
       renderTicker();
       setInterval(updateTicker, 1900);
 
-      const rotatePhrases = [
-        'Now accessible.',
-        'Built for hunters, not spectators.',
-        'Precision beats prediction.',
-        'Alpha for people who move first.'
-      ];
-      let rotateIndex = 0;
-      setInterval(() => {
-        if (!heroRotate) return;
-        rotateIndex = (rotateIndex + 1) % rotatePhrases.length;
-        heroRotate.style.opacity = '0';
-        setTimeout(() => {
-          heroRotate.textContent = rotatePhrases[rotateIndex];
-          heroRotate.style.opacity = '1';
-        }, 200);
-      }, 2600);
-
-      const heroFeedPool = [
-        '[00:15:02] Order-block reclaimed near $2,384.20 · bias: long',
-        '[00:15:21] News catalyst scored 8.4/10 · volatility expansion expected',
-        '[00:15:33] Risk model: protect below $2,378.90 · trail winners',
-        '[00:15:59] VIP macro context refreshed · dollar weakness confirmed',
-        '[00:16:22] EGG momentum basket synchronized · London follow-through'
-      ];
-      setInterval(() => {
-        if (!heroTerminal) return;
-        const lines = heroTerminal.querySelectorAll('.hero-feed-line');
-        if (!lines.length) return;
-        const picked = heroFeedPool[Math.floor(Math.random() * heroFeedPool.length)];
-        lines[0].remove();
-        const row = document.createElement('div');
-        row.className = 'hero-feed-line';
-        row.textContent = picked;
-        heroTerminal.appendChild(row);
-      }, 3200);
-
       function handleScroll() {
         const scrollTop = window.scrollY;
         const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -702,11 +569,6 @@
       }
       window.addEventListener('scroll', handleScroll, { passive: true });
       handleScroll();
-
-      window.addEventListener('mousemove', (e) => {
-        document.body.style.setProperty('--mx', `${e.clientX}px`);
-        document.body.style.setProperty('--my', `${e.clientY}px`);
-      });
 
       const revealObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
@@ -769,16 +631,6 @@
         setTimeout(() => scrambleText(el), 160 + (i * 120));
       });
 
-      const scrambleObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting && entry.target.dataset.scrambled !== '1') {
-            entry.target.dataset.scrambled = '1';
-            scrambleText(entry.target);
-          }
-        });
-      }, { threshold: 0.6 });
-      document.querySelectorAll('.section-title.scramble').forEach(el => scrambleObserver.observe(el));
-
       const toasts = document.getElementById('toasts');
       const toastPool = [
         '🔔 @xau_hunter just joined VIP',
@@ -839,20 +691,6 @@
           });
           btn.addEventListener('mouseleave', () => {
             btn.style.transform = 'translate(0,0)';
-          });
-        });
-
-        document.querySelectorAll('.tilt').forEach(card => {
-          card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const px = (e.clientX - rect.left) / rect.width;
-            const py = (e.clientY - rect.top) / rect.height;
-            const rx = (0.5 - py) * 8;
-            const ry = (px - 0.5) * 8;
-            card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-4px)`;
-          });
-          card.addEventListener('mouseleave', () => {
-            card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0)';
           });
         });
       }
