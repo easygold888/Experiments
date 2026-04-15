@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EasyGoldGlitch — VIP Gold Intelligence</title>
+  <meta name="description" content="Join EasyGoldGlitch VIP for algorithmic XAUUSD signals, real-time alerts, and elite market intelligence." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1: #050508;
+      --bg-2: #0a0a12;
+      --gold: #FFD700;
+      --teal: #00FFD1;
+      --amber: #FF6B00;
+      --text: #F5F5F0;
+      --muted: #b9b9b0;
+      --glass: rgba(255,255,255,0.04);
+      --glass-border: rgba(255,215,0,0.35);
+      --shadow-gold: 0 0 30px rgba(255, 215, 0, 0.2);
+      --radius: 20px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; scroll-behavior: smooth; }
+    body {
+      font-family: "Instrument Serif", serif;
+      color: var(--text);
+      background: radial-gradient(circle at 20% 20%, #0f0f17 0%, var(--bg-1) 35%, var(--bg-2) 100%);
+      overflow-x: hidden;
+      min-height: 100vh;
+      cursor: none;
+    }
+
+    .cursor, .cursor-follower {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .cursor {
+      width: 9px;
+      height: 9px;
+      background: var(--gold);
+      box-shadow: 0 0 12px rgba(255,215,0,.9);
+    }
+    .cursor-follower {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(255,215,0,.55);
+      transition: width .2s ease, height .2s ease, border-color .2s ease;
+    }
+
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--amber), var(--gold), var(--teal));
+      box-shadow: 0 0 14px rgba(255,215,0,.65);
+      z-index: 1001;
+    }
+
+    .ambient {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: -1;
+      pointer-events: none;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(60px);
+      opacity: .35;
+      animation: drift 24s infinite ease-in-out alternate;
+      will-change: transform;
+    }
+    .blob.gold { width: 35vw; height: 35vw; background: rgba(255,215,0,.48); top: 8%; left: -8%; }
+    .blob.amber { width: 28vw; height: 28vw; background: rgba(255,107,0,.42); top: 45%; right: -6%; animation-delay: -7s; }
+    .blob.teal { width: 30vw; height: 30vw; background: rgba(0,255,209,.28); bottom: -10%; left: 32%; animation-delay: -12s; }
+
+    @keyframes drift {
+      0% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(6vw,-4vh) scale(1.08); }
+      100% { transform: translate(-4vw,5vh) scale(.95); }
+    }
+
+    .glass {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid transparent;
+      background: linear-gradient(120deg, rgba(255,215,0,.45), rgba(0,255,209,.08), rgba(255,140,0,.35)) border-box;
+      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+      opacity: .65;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 10px;
+      z-index: 1000;
+      width: min(1200px, calc(100% - 24px));
+      margin: 10px auto 0;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: "DM Mono", monospace;
+    }
+    .ticker { overflow: hidden; white-space: nowrap; font-size: .95rem; color: var(--gold); }
+    .ticker span { display: inline-block; min-width: 260px; }
+    .live-status { display: flex; align-items: center; gap: 8px; color: #f2f2f2; font-size: .85rem; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #ff2020; box-shadow: 0 0 10px #ff2020; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0%,100%{ transform: scale(1);} 50%{ transform: scale(1.35);} }
+
+    section { width: min(1200px, calc(100% - 28px)); margin: 40px auto; position: relative; }
+
+    .hero {
+      min-height: 95vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .hero-ring {
+      position: absolute;
+      border: 1px solid rgba(255,215,0,.24);
+      border-radius: 50%;
+      filter: blur(.2px);
+    }
+    .hero-ring.one { width: 70vw; height: 70vw; top: -28vw; left: -12vw; }
+    .hero-ring.two { width: 48vw; height: 48vw; right: -10vw; bottom: -20vw; border-color: rgba(0,255,209,.18); }
+    .hero-ring.three { width: 22vw; height: 22vw; left: 40%; top: 12%; border-color: rgba(255,107,0,.22); }
+
+    .hero-inner { z-index: 2; max-width: 950px; }
+    .eyebrow { font-family: "DM Mono", monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--teal); opacity: .88; }
+    h1, h2, h3 { margin: 0; line-height: .95; }
+    .display {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(3.8rem, 12vw, 12rem);
+      letter-spacing: .02em;
+      text-shadow: 0 0 24px rgba(255,215,0,.12);
+      margin: 10px 0 8px;
+    }
+    .hero p {
+      font-size: clamp(1rem, 2.2vw, 1.45rem);
+      max-width: 700px;
+      margin: 0 auto 26px;
+      color: #e7e7df;
+    }
+
+    .cta {
+      appearance: none;
+      border: 1px solid rgba(255,215,0,.62);
+      color: #101010;
+      text-decoration: none;
+      background: linear-gradient(100deg, #fff2a8, var(--gold), #ffb300);
+      padding: 18px 34px;
+      border-radius: 999px;
+      font-family: "DM Mono", monospace;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+      box-shadow: 0 0 0 rgba(255,215,0,.0);
+      will-change: transform;
+    }
+    .cta:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 0 35px rgba(255,215,0,.45);
+      filter: saturate(1.1);
+    }
+    .hero .proof-pill {
+      margin: 16px auto 0;
+      width: fit-content;
+      padding: 10px 16px;
+      font-family: "DM Mono", monospace;
+      font-size: .84rem;
+      color: #dadacf;
+    }
+
+    .marquee-wrap {
+      padding: 14px 0;
+      overflow: hidden;
+      border-radius: 16px;
+    }
+    .marquee-track {
+      width: max-content;
+      display: flex;
+      gap: 26px;
+      padding: 0 10px;
+      font-family: "DM Mono", monospace;
+      color: var(--gold);
+      animation: marquee 26s linear infinite;
+      white-space: nowrap;
+    }
+    @keyframes marquee { from { transform: translateX(0);} to { transform: translateX(-50%);} }
+
+    .section-title {
+      font-family: "Bebas Neue", sans-serif;
+      letter-spacing: .04em;
+      font-size: clamp(2rem, 6vw, 5rem);
+      margin-bottom: 16px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .stat-card { padding: 26px 18px; text-align: center; }
+    .stat-number {
+      font-family: "DM Mono", monospace;
+      font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+      color: var(--gold);
+      text-shadow: var(--shadow-gold);
+      margin-bottom: 10px;
+    }
+    .stat-label { color: #dfdfd5; font-size: 1rem; }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .feature-card {
+      padding: 24px;
+      min-height: 230px;
+      transition: transform .28s ease, box-shadow .28s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 38px rgba(0,0,0,.45), 0 0 28px rgba(255,215,0,.2);
+    }
+    .feature-icon { font-size: 2rem; margin-bottom: 10px; }
+    .feature-title {
+      font-family: "DM Mono", monospace;
+      font-weight: 500;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+    }
+    .feature-desc { color: var(--muted); line-height: 1.45; }
+
+    .how-wrap { height: 300vh; position: relative; }
+    .how-pin {
+      position: sticky;
+      top: 12vh;
+      height: 76vh;
+      overflow: hidden;
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .how-track {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: min(76vw, 420px);
+      gap: 18px;
+      height: 100%;
+      align-items: stretch;
+      transform: translateX(0);
+      will-change: transform;
+    }
+    .step-card { padding: 24px; display: flex; flex-direction: column; justify-content: space-between; }
+    .step-no { font-family: "Bebas Neue", sans-serif; font-size: clamp(3rem, 8vw, 6rem); color: var(--gold); opacity: .95; }
+    .step-text { font-size: clamp(1.1rem, 2.4vw, 1.5rem); max-width: 24ch; }
+
+    .cta-final {
+      min-height: 90vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+    .cta-final p { color: #d0d0c6; font-size: clamp(1rem, 2vw, 1.35rem); margin-bottom: 24px; }
+    .cta-final .cta {
+      padding: 20px 42px;
+      font-size: 1.05rem;
+      animation: ctaPulse 1.8s infinite ease-in-out;
+    }
+    @keyframes ctaPulse {
+      0%,100%{ box-shadow: 0 0 0 rgba(255,215,0,.25); }
+      50%{ box-shadow: 0 0 34px rgba(255,215,0,.58); }
+    }
+    .fine { color: #99998d; font-size: .9rem; margin-top: 14px; }
+
+    footer {
+      width: min(1200px, calc(100% - 28px));
+      margin: 0 auto 30px;
+      padding: 24px;
+    }
+    .footer-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .logo { font-family: "Bebas Neue", sans-serif; font-size: 2.2rem; color: var(--gold); letter-spacing: .12em; }
+    .footer-links { display: flex; gap: 16px; flex-wrap: wrap; }
+    .footer-links a { color: #dfdfd4; text-decoration: none; font-family: "DM Mono", monospace; }
+    .footer-links a:hover { color: var(--teal); }
+    .disclaimer { margin-top: 12px; color: #8d8d80; font-size: .84rem; line-height: 1.45; }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .toast-container {
+      position: fixed;
+      right: 14px;
+      bottom: 16px;
+      z-index: 1100;
+      display: grid;
+      gap: 10px;
+      width: min(92vw, 360px);
+    }
+    .toast {
+      padding: 12px 14px;
+      font-family: "DM Mono", monospace;
+      font-size: .84rem;
+      transform: translateX(110%);
+      opacity: 0;
+      transition: transform .42s cubic-bezier(.2,.8,.2,1), opacity .32s ease;
+    }
+    .toast.show { transform: translateX(0); opacity: 1; }
+
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+      .how-wrap { height: auto; }
+      .how-pin { position: relative; top: auto; height: auto; }
+      .how-track {
+        grid-auto-flow: row;
+        grid-auto-columns: auto;
+        grid-template-columns: 1fr;
+        transform: none !important;
+      }
+    }
+    @media (max-width: 768px) {
+      body { cursor: auto; }
+      .cursor, .cursor-follower { display: none; }
+      .topbar { margin-top: 4px; }
+      .live-status { font-size: .76rem; }
+      .ticker { font-size: .8rem; }
+      .stats-grid, .features-grid { grid-template-columns: 1fr; }
+      .hero { min-height: 88vh; }
+      .cta { width: 100%; max-width: 360px; }
+      section { margin: 28px auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scroll-progress" id="progress"></div>
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-follower" id="cursorFollower"></div>
+
+  <div class="ambient" aria-hidden="true">
+    <div class="blob gold"></div>
+    <div class="blob amber"></div>
+    <div class="blob teal"></div>
+  </div>
+
+  <header class="topbar glass">
+    <div class="ticker" id="priceTicker" aria-live="polite"></div>
+    <div class="live-status"><span class="dot"></span> LIVE — <span id="onlineCount">847</span> members online</div>
+  </header>
+
+  <main>
+    <section class="hero reveal" id="hero">
+      <div class="hero-layer" data-speed="0.08">
+        <div class="hero-ring one"></div>
+        <div class="hero-ring two"></div>
+        <div class="hero-ring three"></div>
+      </div>
+      <div class="hero-inner" data-speed="0.22">
+        <div class="eyebrow">EasyGoldGlitch / XAUUSD intelligence</div>
+        <h1 class="display scramble" data-text="THE EDGE IS REAL.">THE EDGE IS REAL.</h1>
+        <p>Institutional-grade Gold signals. Now accessible.</p>
+        <a href="https://discord.gg/g7NkpsHT" class="cta magnetic" target="_blank" rel="noopener noreferrer">JOIN VIP CHANNEL FREE →</a>
+        <div class="proof-pill glass">🔐 Invite-only · 2,400+ traders · $0 forever</div>
+      </div>
+    </section>
+
+    <section class="marquee-wrap glass reveal">
+      <div class="marquee-track" id="socialTrack">
+        <span>📊 Signal accuracy 78.3%</span><span>··</span>
+        <span>💰 Avg monthly alpha +4.1%</span><span>··</span>
+        <span>⚡ Alerts in real-time</span><span>··</span>
+        <span>🏆 #1 Gold channel on Discord</span><span>··</span>
+        <span>📊 Signal accuracy 78.3%</span><span>··</span>
+        <span>💰 Avg monthly alpha +4.1%</span><span>··</span>
+        <span>⚡ Alerts in real-time</span><span>··</span>
+        <span>🏆 #1 Gold channel on Discord</span><span>··</span>
+      </div>
+    </section>
+
+    <section class="reveal" id="numbers">
+      <h2 class="section-title scramble" data-text="THE NUMBERS">THE NUMBERS</h2>
+      <div class="stats-grid">
+        <article class="stat-card glass">
+          <div class="stat-number" data-count="2400" data-prefix="" data-suffix="+">0</div>
+          <div class="stat-label">Active Members</div>
+        </article>
+        <article class="stat-card glass">
+          <div class="stat-number" data-count="78" data-prefix="" data-suffix="%">0</div>
+          <div class="stat-label">Signal Win Rate</div>
+        </article>
+        <article class="stat-card glass">
+          <div class="stat-number" data-count="2.3" data-prefix="$" data-suffix="M+" data-decimals="1">0</div>
+          <div class="stat-label">Community P&amp;L Tracked</div>
+        </article>
+        <article class="stat-card glass">
+          <div class="stat-number" data-count="90" data-prefix="< " data-suffix="sec">0</div>
+          <div class="stat-label">Average Alert Speed</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="reveal">
+      <h2 class="section-title scramble" data-text="WHAT YOU GET IN VIP">WHAT YOU GET IN VIP</h2>
+      <div class="features-grid">
+        <article class="feature-card glass">
+          <div class="feature-icon">🔔</div>
+          <div class="feature-title">Real-Time News Alerts</div>
+          <div class="feature-desc">Market-moving gold news before it hits your feed. Cut noise. Keep only actionable catalysts.</div>
+        </article>
+        <article class="feature-card glass">
+          <div class="feature-icon">📡</div>
+          <div class="feature-title">Algorithmic Signal Feed</div>
+          <div class="feature-desc">EGG system outputs in real-time with structured entries, invalidation zones, and timing context.</div>
+        </article>
+        <article class="feature-card glass">
+          <div class="feature-icon">🧠</div>
+          <div class="feature-title">Elite Analysis</div>
+          <div class="feature-desc">Weekly deep dives. No fluff. Just edge for traders who prefer signal over opinion.</div>
+        </article>
+      </div>
+    </section>
+
+    <section class="how-wrap reveal" id="how">
+      <div class="how-pin glass">
+        <h2 class="section-title scramble" data-text="HOW IT WORKS" style="margin:4px 0 14px;">HOW IT WORKS</h2>
+        <div class="how-track" id="howTrack">
+          <article class="step-card glass" data-speed="0.05">
+            <div class="step-no">01</div>
+            <div class="step-text">Click the VIP channel link below and enter the server.</div>
+          </article>
+          <article class="step-card glass" data-speed="0.08">
+            <div class="step-no">02</div>
+            <div class="step-text">Join the Discord server and read onboarding instantly.</div>
+          </article>
+          <article class="step-card glass" data-speed="0.1">
+            <div class="step-no">03</div>
+            <div class="step-text">Verify your access and unlock the VIP News Channel.</div>
+          </article>
+          <article class="step-card glass" data-speed="0.14">
+            <div class="step-no">04</div>
+            <div class="step-text">Receive your first signal within 24h and act with confidence.</div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-final reveal">
+      <div>
+        <h2 class="display scramble" data-text="STOP TRADING BLIND.">STOP TRADING BLIND.</h2>
+        <p>The VIP channel is free. The edge is not.</p>
+        <a href="https://discord.gg/g7NkpsHT" class="cta magnetic" target="_blank" rel="noopener noreferrer">JOIN VIP CHANNEL FREE →</a>
+        <div class="fine">No credit card. No commitment. Just gold alpha.</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="glass reveal">
+    <div class="footer-top">
+      <div class="logo">EGG</div>
+      <nav class="footer-links">
+        <a href="https://discord.gg/g7NkpsHT" target="_blank" rel="noopener noreferrer">Discord</a>
+        <a href="https://x.com" target="_blank" rel="noopener noreferrer">Twitter/X</a>
+        <a href="https://www.easygoldglitch.com" target="_blank" rel="noopener noreferrer">easygoldglitch.com</a>
+      </nav>
+    </div>
+    <div class="disclaimer">Trading signals are for informational purposes only. Past performance does not guarantee future results.</div>
+  </footer>
+
+  <div class="toast-container" id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    (() => {
+      const progress = document.getElementById('progress');
+      const priceTicker = document.getElementById('priceTicker');
+      const onlineCount = document.getElementById('onlineCount');
+      const cursor = document.getElementById('cursor');
+      const cursorFollower = document.getElementById('cursorFollower');
+      const how = document.getElementById('how');
+      const howTrack = document.getElementById('howTrack');
+
+      const tickerState = { price: 2387.40, change: 0.34 };
+      const tickerPrefix = ['XAUUSD ▲', 'XAUUSD ▲', 'XAUUSD ▼'];
+
+      function renderTicker() {
+        const sign = tickerState.change >= 0 ? '+' : '';
+        const direction = tickerState.change >= 0 ? '▲' : '▼';
+        const absChange = Math.abs(tickerState.change).toFixed(2);
+        priceTicker.innerHTML = `<span>XAUUSD ${direction} $${tickerState.price.toFixed(2)} ${sign}${absChange}%</span><span>XAUUSD ${direction} $${tickerState.price.toFixed(2)} ${sign}${absChange}%</span>`;
+      }
+
+      function updateTicker() {
+        const delta = (Math.random() - 0.45) * 1.7;
+        tickerState.price = Math.max(2200, tickerState.price + delta);
+        tickerState.change = ((tickerState.change + (Math.random() - 0.45) * 0.12)).toFixed(2);
+        tickerState.change = Number(tickerState.change);
+        renderTicker();
+
+        const online = 820 + Math.floor(Math.random() * 75);
+        onlineCount.textContent = online;
+      }
+
+      renderTicker();
+      setInterval(updateTicker, 1900);
+
+      function handleScroll() {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const value = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progress.style.width = value + '%';
+
+        document.querySelectorAll('[data-speed]').forEach(el => {
+          const speed = Number(el.dataset.speed || 0);
+          el.style.transform = `translateY(${scrollTop * speed * -0.08}px)`;
+        });
+
+        if (window.innerWidth > 1024 && how && howTrack) {
+          const rect = how.getBoundingClientRect();
+          const total = rect.height - window.innerHeight;
+          if (total > 0) {
+            const p = Math.min(1, Math.max(0, -rect.top / total));
+            const maxX = Math.max(0, howTrack.scrollWidth - howTrack.clientWidth);
+            howTrack.style.transform = `translateX(${-maxX * p}px)`;
+          }
+        }
+      }
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
+
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, { threshold: 0.14 });
+      document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+      function animateNumber(el) {
+        if (el.dataset.done === '1') return;
+        el.dataset.done = '1';
+        const target = Number(el.dataset.count);
+        const decimals = Number(el.dataset.decimals || 0);
+        const prefix = el.dataset.prefix || '';
+        const suffix = el.dataset.suffix || '';
+        const duration = 1500;
+        const start = performance.now();
+
+        function frame(now) {
+          const p = Math.min(1, (now - start) / duration);
+          const eased = 1 - Math.pow(1 - p, 3);
+          const value = target * eased;
+          const shown = decimals > 0 ? value.toFixed(decimals) : Math.round(value).toLocaleString();
+          el.textContent = `${prefix}${shown}${suffix}`;
+          if (p < 1) requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      }
+
+      const statObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) animateNumber(entry.target);
+        });
+      }, { threshold: 0.5 });
+      document.querySelectorAll('.stat-number').forEach(el => statObserver.observe(el));
+
+      function scrambleText(el) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#@%';
+        const target = el.dataset.text || el.textContent;
+        let frame = 0;
+        const max = 24;
+        const timer = setInterval(() => {
+          const text = target.split('').map((ch, i) => {
+            if (ch === ' ') return ' ';
+            if (i < frame / 2) return target[i];
+            return chars[Math.floor(Math.random() * chars.length)];
+          }).join('');
+          el.textContent = text;
+          frame++;
+          if (frame > max) {
+            clearInterval(timer);
+            el.textContent = target;
+          }
+        }, 34);
+      }
+
+      document.querySelectorAll('.scramble').forEach((el, i) => {
+        setTimeout(() => scrambleText(el), 160 + (i * 120));
+      });
+
+      const toasts = document.getElementById('toasts');
+      const toastPool = [
+        '🔔 @xau_hunter just joined VIP',
+        '📈 EGG Signal: LONG $2,381 fired 3 min ago',
+        '💬 74 messages in #vip-news last hour',
+        '⚡ Breaking: DXY spike alert posted in VIP',
+        '🧠 Macro brief dropped for NY session',
+        '✅ 3/4 momentum filters aligned on Gold',
+        '🚀 @alpha_scout upgraded to VIP access',
+        '📊 Volatility map updated for London open'
+      ];
+
+      function spawnToast() {
+        if (!toasts) return;
+        const toast = document.createElement('div');
+        toast.className = 'toast glass';
+        toast.textContent = toastPool[Math.floor(Math.random() * toastPool.length)];
+        toasts.prepend(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => toast.remove(), 460);
+        }, 4000);
+      }
+      function scheduleToast() {
+        spawnToast();
+        const next = 6000 + Math.random() * 4000;
+        setTimeout(scheduleToast, next);
+      }
+      setTimeout(scheduleToast, 2500);
+
+      if (window.matchMedia('(pointer:fine)').matches) {
+        let x = window.innerWidth / 2, y = window.innerHeight / 2;
+        let fx = x, fy = y;
+
+        window.addEventListener('mousemove', (e) => {
+          x = e.clientX;
+          y = e.clientY;
+          cursor.style.left = `${x}px`;
+          cursor.style.top = `${y}px`;
+        });
+
+        function follow() {
+          fx += (x - fx) * 0.15;
+          fy += (y - fy) * 0.15;
+          cursorFollower.style.left = `${fx}px`;
+          cursorFollower.style.top = `${fy}px`;
+          requestAnimationFrame(follow);
+        }
+        follow();
+
+        document.querySelectorAll('.magnetic').forEach(btn => {
+          btn.addEventListener('mousemove', (e) => {
+            const rect = btn.getBoundingClientRect();
+            const dx = e.clientX - (rect.left + rect.width / 2);
+            const dy = e.clientY - (rect.top + rect.height / 2);
+            btn.style.transform = `translate(${dx * 0.15}px, ${dy * 0.15}px)`;
+          });
+          btn.addEventListener('mouseleave', () => {
+            btn.style.transform = 'translate(0,0)';
+          });
+        });
+      }
+
+      window.addEventListener('resize', handleScroll);
+    })();
+  </script>
+</body>
+</html>
