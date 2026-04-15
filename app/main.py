@@ -645,8 +645,8 @@ def build_asset_context(selected_asset: str, watchlist: list[dict[str, Any]]) ->
         "momentum": "bullish" if item["change_pct"] > 0.4 else "bearish" if item["change_pct"] < -0.4 else "neutral",
         "volatility": round(abs(item["change_pct"]) * 1.8 + 0.7, 2),
         "returns": returns,
-        "seasonality": [],
-        "note": f"{item['symbol']} en seguimiento con datos de mercado público.",
+        "seasonality": [round(base * (1 + pseudo_noise(item["symbol"] + str(i)) / 25), 2) for i in range(12)],
+        "note": f"{item['symbol']} mantiene sesgo {('alcista' if item['change_pct'] > 0 else 'bajista')} en marco táctico.",
     }
 
 
@@ -685,8 +685,8 @@ async def events(
 
 @app.get("/api/intelligence/hub")
 async def intelligence_hub(
-    countries: str = Query("COL"),
-    continents: str = Query("South America"),
+    countries: str = Query("USA,BRA,MEX,COL"),
+    continents: str = Query("North America,South America"),
     categories: str = Query("politica,acciones,macro,geopolitica,energia"),
     keyword: str = Query(""),
     limit: int = Query(120, ge=20, le=250),
@@ -773,7 +773,7 @@ async def dashboard(base: str = Query("USD"), country: str = Query("COL"), asset
 
 
 @app.get("/api/overview")
-async def overview(base: str = Query("USD"), country: str = Query("COL"), asset: str = Query("XAUUSD")) -> JSONResponse:
+async def overview(base: str = Query("USD"), country: str = Query("MEX"), asset: str = Query("XAUUSD")) -> JSONResponse:
     return await dashboard(base=base, country=country, asset=asset)
 
 

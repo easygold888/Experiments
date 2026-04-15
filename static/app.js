@@ -178,7 +178,7 @@ async function refreshAll() {
 
   try {
     const [dashboard, hub] = await Promise.all([
-      getJson(`/api/dashboard?country=COL&asset=${selectedAsset}&base=USD`),
+      getJson(`/api/dashboard?country=MEX&asset=${selectedAsset}&base=USD`),
       getJson(`/api/intelligence/hub?countries=${encodeURIComponent(countries)}&continents=${encodeURIComponent(continents)}&categories=${encodeURIComponent(categories)}&keyword=${encodeURIComponent(keyword)}&limit=${limit}`),
     ]);
 
