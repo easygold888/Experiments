@@ -1,4 +1,8 @@
-.next
-node_modules
+__pycache__/
+*.pyc
+.venv/
+
+.next/
+node_modules/
 npm-debug.log*
 .DS_Store
